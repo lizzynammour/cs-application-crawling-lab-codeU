@@ -5,9 +5,10 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-
+import org.jsoup.nodes.Node;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import java.util.Iterator;
 
 import redis.clients.jedis.Jedis;
 
@@ -54,8 +55,24 @@ public class WikiCrawler {
 	 * @throws IOException
 	 */
 	public String crawl(boolean testing) throws IOException {
-        // FILL THIS IN!
-		return null;
+    	if(testing == true) {
+    		String url = queue.remove();
+    		Elements els = wf.readWikipedia(url);
+    		index.indexPage(url,els);
+    		queueInternalLinks(els);
+    		return url;
+    	}
+    	else {
+    		String url = queue.remove();
+    		if(index.isIndexed(url)) {
+    			return null;
+    		}
+    		Elements els = wf.readWikipedia(url);
+    		index.indexPage(url,els);
+    		queueInternalLinks(els);
+    		return url;
+
+    	}
 	}
 	
 	/**
@@ -65,7 +82,18 @@ public class WikiCrawler {
 	 */
 	// NOTE: absence of access level modifier means package-level
 	void queueInternalLinks(Elements paragraphs) {
-        // FILL THIS IN!
+		for (Element p: paragraphs) {
+			WikiNodeIterable it2 = new WikiNodeIterable(p);
+			Iterator<Node> it = it2.iterator();
+			while(it.hasNext()) {
+				Node n = it.next();
+				if (n instanceof Element) {
+					Element el = (Element) n;
+					if (el.tagName().equals("a") && el.attr("href").startsWith("/wiki"))
+						queue.offer("https://en.wikipedia.org" + n.attr("href"));
+				}
+			}
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
